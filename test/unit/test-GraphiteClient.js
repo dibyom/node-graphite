@@ -14,6 +14,7 @@ test('graphite.createClient', {
   'takes carbon dsn first and creates lazy socket': function() {
     var client = graphite.createClient('plaintext://example.org:8080/');
   },
+
 });
 
 test('graphite.flatten', {
@@ -51,6 +52,14 @@ test('graphite.flatten', {
       'd'            : 4,
     });
   },
+
+  'adds prefix if supplied': function() {
+   var obj = {foo: 'bar'};
+   var flat = graphite.flatten(obj,null, 'a.b');
+
+   assert.deepEqual(flat, {'a.b.foo': 'bar'})
+  },
+
 });
 
 var client;
@@ -95,5 +104,24 @@ test('GraphiteClient', {
     client.write({}, cb);
 
     assert.equal(carbon.write.getCall(0).args[2], cb);
+  },
+});
+
+test('GraphiteClient with Prefix', {
+  before: function() {
+    carbon = sinon.stub({
+      write: function() {},
+    });
+    client = new GraphiteClient({
+      carbon: carbon, 
+      prefix: 'a.b'
+    });
+  },
+
+  '#write flattens metrics with prefix before passing to carbon': function() {
+    var metrics = {foo: {bar: 1}};
+    client.write(metrics);
+
+    assert.ok(carbon.write.calledWith({'a.b.foo.bar': 1}));
   },
 });
